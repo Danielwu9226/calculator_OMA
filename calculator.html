@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retro Calculator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a1a;
+    font-family: 'VT323', monospace;
+    overflow: hidden;
+  }
+
+  /* Animated scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .calculator {
+    width: 380px;
+    background: linear-gradient(145deg, #1a1a3e, #0d0d2b);
+    border: 4px solid #2a2a6e;
+    border-radius: 20px;
+    padding: 28px 24px 24px;
+    box-shadow:
+      0 0 30px rgba(50, 80, 200, 0.3),
+      0 0 60px rgba(50, 80, 200, 0.15),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  /* --- Brand label --- */
+  .brand {
+    text-align: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: #ff4466;
+    letter-spacing: 4px;
+    margin-bottom: 16px;
+    text-shadow: 0 0 8px rgba(255,68,102,0.6);
+  }
+
+  /* --- Display --- */
+  .display {
+    background: #0b1628;
+    border: 3px solid #2233aa;
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 22px;
+    text-align: right;
+    position: relative;
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
+  }
+
+  .display .expression {
+    font-size: 16px;
+    color: #6688cc;
+    min-height: 22px;
+    word-break: break-all;
+  }
+
+  .display .result {
+    font-size: 42px;
+    color: #44aaff;
+    text-shadow: 0 0 12px rgba(68,170,255,0.5);
+    line-height: 1.2;
+    min-height: 52px;
+    word-break: break-all;
+  }
+
+  /* CRT glow inside display */
+  .display::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 6px;
+    background: radial-gradient(ellipse at center, rgba(68,170,255,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* --- Button grid --- */
+  .buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  button {
+    font-family: 'VT323', monospace;
+    font-size: 26px;
+    border: none;
+    border-radius: 8px;
+    padding: 16px 0;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.08s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  button:active {
+    transform: scale(0.94);
+  }
+
+  /* Number buttons — deep blue */
+  .btn-num {
+    background: linear-gradient(180deg, #1e3a8a, #152a66);
+    color: #ccddff;
+    border: 2px solid #3355cc;
+    box-shadow:
+      0 4px 0 #0a1540,
+      0 0 12px rgba(50,80,200,0.2);
+  }
+  .btn-num:hover {
+    background: linear-gradient(180deg, #2848a8, #1e3a8a);
+    box-shadow:
+      0 4px 0 #0a1540,
+      0 0 18px rgba(50,80,200,0.4);
+    color: #ffffff;
+  }
+
+  /* Operator buttons — red */
+  .btn-op {
+    background: linear-gradient(180deg, #cc2244, #991133);
+    color: #ffe0e8;
+    border: 2px solid #dd3355;
+    box-shadow:
+      0 4px 0 #550a18,
+      0 0 12px rgba(200,50,80,0.25);
+  }
+  .btn-op:hover {
+    background: linear-gradient(180deg, #ee3355, #cc2244);
+    box-shadow:
+      0 4px 0 #550a18,
+      0 0 20px rgba(200,50,80,0.45);
+    color: #ffffff;
+  }
+
+  /* Control buttons (AC, C, =) — accent */
+  .btn-ctrl {
+    background: linear-gradient(180deg, #8b1a2b, #5c1018);
+    color: #ffcccc;
+    border: 2px solid #aa2244;
+    box-shadow:
+      0 4px 0 #330810,
+      0 0 10px rgba(180,40,60,0.2);
+  }
+  .btn-ctrl:hover {
+    background: linear-gradient(180deg, #a8223a, #8b1a2b);
+    box-shadow:
+      0 4px 0 #330810,
+      0 0 18px rgba(180,40,60,0.4);
+    color: #ffffff;
+  }
+
+  /* Equals — brighter blue */
+  .btn-eq {
+    background: linear-gradient(180deg, #2255cc, #183d99);
+    color: #ffffff;
+    border: 2px solid #3366ee;
+    box-shadow:
+      0 4px 0 #0c1f55,
+      0 0 14px rgba(34,85,204,0.35);
+    font-size: 32px;
+  }
+  .btn-eq:hover {
+    background: linear-gradient(180deg, #3366dd, #2255cc);
+    box-shadow:
+      0 4px 0 #0c1f55,
+      0 0 22px rgba(34,85,204,0.55);
+  }
+
+  /* Zero button spans 2 cols */
+  .btn-zero {
+    grid-column: span 2;
+  }
+
+  /* Label bar under brand */
+  .solar-panel {
+    display: flex;
+    gap: 3px;
+    justify-content: center;
+    margin-bottom: 18px;
+  }
+  .solar-panel span {
+    width: 40px;
+    height: 8px;
+    background: linear-gradient(180deg, #1122aa, #0a1166);
+    border-radius: 2px;
+    border: 1px solid #2244cc;
+    opacity: 0.7;
+  }
+
+  /* Decorative LED dot */
+  .led {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding: 0 4px;
+  }
+  .led-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ff2244;
+    box-shadow: 0 0 6px #ff2244, 0 0 12px rgba(255,34,68,0.5);
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .led-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: #4466aa;
+    letter-spacing: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="calculator">
+  <div class="brand">RETRO·CALC</div>
+
+  <div class="solar-panel">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+
+  <div class="display">
+    <div class="expression" id="expression"></div>
+    <div class="result" id="result">0</div>
+  </div>
+
+  <div class="led">
+    <div class="led-dot"></div>
+    <div class="led-label">READY</div>
+  </div>
+
+  <div class="buttons">
+    <!-- Row 1 -->
+    <button class="btn-ctrl" onclick="clearAll()">AC</button>
+    <button class="btn-ctrl" onclick="clearEntry()">C</button>
+    <button class="btn-op"   onclick="inputOp('%')">%</button>
+    <button class="btn-op"   onclick="inputOp('/')">÷</button>
+
+    <!-- Row 2 -->
+    <button class="btn-num" onclick="inputNum('7')">7</button>
+    <button class="btn-num" onclick="inputNum('8')">8</button>
+    <button class="btn-num" onclick="inputNum('9')">9</button>
+    <button class="btn-op"  onclick="inputOp('*')">×</button>
+
+    <!-- Row 3 -->
+    <button class="btn-num" onclick="inputNum('4')">4</button>
+    <button class="btn-num" onclick="inputNum('5')">5</button>
+    <button class="btn-num" onclick="inputNum('6')">6</button>
+    <button class="btn-op"  onclick="inputOp('-')">−</button>
+
+    <!-- Row 4 -->
+    <button class="btn-num" onclick="inputNum('1')">1</button>
+    <button class="btn-num" onclick="inputNum('2')">2</button>
+    <button class="btn-num" onclick="inputNum('3')">3</button>
+    <button class="btn-op"  onclick="inputOp('+')">+</button>
+
+    <!-- Row 5 -->
+    <button class="btn-num btn-zero" onclick="inputNum('0')">0</button>
+    <button class="btn-num" onclick="inputNum('.')">.</button>
+    <button class="btn-eq"  onclick="calculate()">=</button>
+  </div>
+</div>
+
+<script>
+  let current = '0';
+  let previous = '';
+  let operator = null;
+  let resetNext = false;
+
+  const $result = document.getElementById('result');
+  const $expr   = document.getElementById('expression');
+
+  function updateDisplay() {
+    $result.textContent = current;
+  }
+
+  function inputNum(num) {
+    if (resetNext) {
+      current = '';
+      resetNext = false;
+    }
+    if (num === '.' && current.includes('.')) return;
+    if (current === '0' && num !== '.') current = '';
+    current += num;
+    updateDisplay();
+  }
+
+  function inputOp(op) {
+    if (operator && !resetNext) calculate();
+    previous = current;
+    operator = op;
+    const sym = { '/': '÷', '*': '×', '-': '−', '+': '+', '%': '%' }[op] || op;
+    $expr.textContent = previous + ' ' + sym;
+    resetNext = true;
+  }
+
+  function calculate() {
+    if (!operator || !previous) return;
+    const a = parseFloat(previous);
+    const b = parseFloat(current);
+    let res;
+    switch (operator) {
+      case '+': res = a + b; break;
+      case '-': res = a - b; break;
+      case '*': res = a * b; break;
+      case '/': res = b === 0 ? 'Error' : a / b; break;
+      case '%': res = a % b; break;
+    }
+    if (typeof res === 'number') res = parseFloat(res.toPrecision(12));
+    $expr.textContent = previous + ' ' + { '/':'÷','*':'×','-':'−','+':'+','%':'%' }[operator] + ' ' + current + ' =';
+    current = String(res);
+    operator = null;
+    previous = '';
+    resetNext = true;
+    updateDisplay();
+  }
+
+  function clearAll() {
+    current = '0';
+    previous = '';
+    operator = null;
+    resetNext = false;
+    $expr.textContent = '';
+    updateDisplay();
+  }
+
+  function clearEntry() {
+    current = '0';
+    resetNext = false;
+    updateDisplay();
+  }
+
+  // Keyboard support
+  document.addEventListener('keydown', e => {
+    if (e.key >= '0' && e.key <= '9') inputNum(e.key);
+    else if (e.key === '.') inputNum('.');
+    else if (e.key === '+') inputOp('+');
+    else if (e.key === '-') inputOp('-');
+    else if (e.key === '*') inputOp('*');
+    else if (e.key === '/') { e.preventDefault(); inputOp('/'); }
+    else if (e.key === '%') inputOp('%');
+    else if (e.key === 'Enter' || e.key === '=') calculate();
+    else if (e.key === 'Escape') clearAll();
+    else if (e.key === 'Backspace') clearEntry();
+  });
+</script>
+</body>
+</html>
