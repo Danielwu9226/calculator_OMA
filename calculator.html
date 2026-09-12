@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎉 Fun Scientific Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #000;
+      font-family: 'Fredoka', system-ui, sans-serif;
+    }
+
+    .calculator {
+      width: 360px;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px);
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.15);
+      overflow: hidden;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+    }
+
+    /* ── Display ── */
+    .display {
+      padding: 28px 24px 20px;
+      text-align: right;
+      min-height: 130px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .display .expression {
+      font-size: 15px;
+      color: #aaa;
+      min-height: 22px;
+      word-break: break-all;
+    }
+    .display .result {
+      font-size: 40px;
+      color: #fff;
+      font-weight: 700;
+      line-height: 1.3;
+      word-break: break-all;
+      transition: color 0.3s;
+    }
+    .display .result.flash {
+      color: #fbbf24;
+    }
+    .display .fun-message {
+      font-size: 13px;
+      color: #f472b6;
+      min-height: 20px;
+      margin-top: 4px;
+      font-weight: 600;
+      transition: opacity 0.3s;
+      opacity: 0;
+    }
+    .display .fun-message.show {
+      opacity: 1;
+    }
+
+    /* ── Button grid ── */
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1px;
+      padding: 1px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 60px;
+      font-size: 18px;
+      font-weight: 600;
+      font-family: 'Fredoka', system-ui, sans-serif;
+      border: none;
+      cursor: pointer;
+      outline: none;
+      transition: filter 0.12s, transform 0.1s;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .btn:active {
+      filter: brightness(0.7);
+      transform: scale(0.94);
+    }
+
+    /* Number buttons */
+    .btn-number {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+    }
+    .btn-number:hover {
+      background: rgba(255,255,255,0.14);
+    }
+
+    /* Operator buttons (+ - × ÷) */
+    .btn-operator {
+      background: #f43f5e;
+      color: #fff;
+      font-size: 22px;
+    }
+    .btn-operator:hover {
+      background: #e11d48;
+    }
+
+    /* Scientific function buttons */
+    .btn-sci {
+      background: rgba(99, 102, 241, 0.5);
+      color: #c7d2fe;
+      font-size: 15px;
+    }
+    .btn-sci:hover {
+      background: rgba(99, 102, 241, 0.7);
+    }
+
+    /* Utility buttons (AC, +/-, %) */
+    .btn-util {
+      background: rgba(255,255,255,0.15);
+      color: #fbbf24;
+      font-weight: 700;
+    }
+
+    /* Equals */
+    .btn-equals {
+      background: linear-gradient(135deg, #f43f5e, #ec4899);
+      color: #fff;
+      font-size: 24px;
+    }
+    .btn-equals:hover {
+      background: linear-gradient(135deg, #e11d48, #db2777);
+    }
+
+    /* Zero spans 2 cols */
+    .btn-zero {
+      grid-column: span 2;
+    }
+
+    /* Pi button special */
+    .btn-pi {
+      background: rgba(168, 85, 247, 0.5);
+      color: #e9d5ff;
+      font-size: 18px;
+    }
+    .btn-pi:hover {
+      background: rgba(168, 85, 247, 0.7);
+    }
+  </style>
+</head>
+<body>
+  <img src="https://upload.wikimedia.org/wikipedia/commons/5/56/Donald_Trump_official_portrait.jpg" crossorigin="anonymous" referrerpolicy="no-referrer" alt="Donald Trump" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:100vmin;height:100vmin;object-fit:cover;z-index:0;opacity:0.45;">
+  <div class="calculator" style="position:relative;z-index:1;">
+    <div class="display">
+      <div class="expression" id="expression"></div>
+      <div class="result" id="result">0</div>
+      <div class="fun-message" id="funMessage"></div>
+    </div>
+    <div class="buttons">
+      <!-- Row 1: Scientific -->
+      <button class="btn btn-sci" data-action="sci" data-value="√">√x</button>
+      <button class="btn btn-sci" data-action="sci" data-value="^2">x²</button>
+      <button class="btn btn-sci" data-action="sci" data-value="^">xʸ</button>
+      <button class="btn btn-pi" data-action="pi">π</button>
+      <button class="btn btn-util" data-action="clear">AC</button>
+
+      <!-- Row 2: 7 8 9 ÷ % -->
+      <button class="btn btn-number" data-action="number" data-value="7">7</button>
+      <button class="btn btn-number" data-action="number" data-value="8">8</button>
+      <button class="btn btn-number" data-action="number" data-value="9">9</button>
+      <button class="btn btn-operator" data-action="operator" data-value="÷">÷</button>
+      <button class="btn btn-util" data-action="percent">%</button>
+
+      <!-- Row 3: 4 5 6 × 1/x -->
+      <button class="btn btn-number" data-action="number" data-value="4">4</button>
+      <button class="btn btn-number" data-action="number" data-value="5">5</button>
+      <button class="btn btn-number" data-action="number" data-value="6">6</button>
+      <button class="btn btn-operator" data-action="operator" data-value="×">×</button>
+      <button class="btn btn-sci" data-action="sci" data-value="1/x">1/x</button>
+
+      <!-- Row 4: 1 2 3 − +/- -->
+      <button class="btn btn-number" data-action="number" data-value="1">1</button>
+      <button class="btn btn-number" data-action="number" data-value="2">2</button>
+      <button class="btn btn-number" data-action="number" data-value="3">3</button>
+      <button class="btn btn-operator" data-action="operator" data-value="−">−</button>
+      <button class="btn btn-util" data-action="sign">+/−</button>
+
+      <!-- Row 5: 0 (span 2) . + = -->
+      <button class="btn btn-number btn-zero" data-action="number" data-value="0">0</button>
+      <button class="btn btn-number" data-action="decimal">.</button>
+      <button class="btn btn-operator" data-action="operator" data-value="+">+</button>
+      <button class="btn btn-equals" data-action="equals">=</button>
+    </div>
+  </div>
+
+  <script>
+    const expressionEl = document.getElementById('expression');
+    const resultEl = document.getElementById('result');
+    const funEl = document.getElementById('funMessage');
+
+    let current = '0';
+    let previous = '';
+    let operator = null;
+    let shouldReset = false;
+    let funTimeout = null;
+
+    const funMessages = [
+      "🎉 Nailed it!",
+      "🧠 Big brain energy!",
+      "✨ Math wizard!",
+      "🔥 Crushing it!",
+      "🚀 Science rules!",
+      "💡 Eureka!",
+      "⚡ Lightning math!",
+      "🌟 Stellar solve!",
+      "🎯 Bullseye!",
+      "🧪 Lab coat approved!",
+      "🎓 Professor vibes!",
+      "💫 Out of this world!",
+      "🏆 Gold medal math!",
+      "🎸 Rockstar numbers!",
+      "🪄 Math magic!",
+    ];
+
+    function randomFunMessage() {
+      return funMessages[Math.floor(Math.random() * funMessages.length)];
+    }
+
+    function showFun() {
+      funEl.textContent = randomFunMessage();
+      funEl.classList.add('show');
+      resultEl.classList.add('flash');
+      clearTimeout(funTimeout);
+      funTimeout = setTimeout(() => {
+        funEl.classList.remove('show');
+        resultEl.classList.remove('flash');
+      }, 2500);
+    }
+
+    function updateDisplay() {
+      resultEl.textContent = current;
+      if (operator && previous) {
+        expressionEl.textContent = `${previous} ${operator}`;
+      } else {
+        expressionEl.textContent = '';
+      }
+    }
+
+    function handleNumber(value) {
+      if (shouldReset) {
+        current = value;
+        shouldReset = false;
+      } else {
+        current = current === '0' ? value : current + value;
+      }
+      if (current.replace('-','').replace('.','').length > 12) {
+        current = current.slice(0, -1);
+      }
+      updateDisplay();
+    }
+
+    function handleDecimal() {
+      if (shouldReset) {
+        current = '0.';
+        shouldReset = false;
+        updateDisplay();
+        return;
+      }
+      if (!current.includes('.')) current += '.';
+      updateDisplay();
+    }
+
+    function handleOperator(op) {
+      if (operator && !shouldReset) calculate();
+      previous = current;
+      operator = op;
+      shouldReset = true;
+      updateDisplay();
+    }
+
+    function handleSci(fn) {
+      const val = parseFloat(current);
+      let res;
+      switch (fn) {
+        case '√':
+          if (val < 0) { current = 'Error'; break; }
+          res = Math.sqrt(val);
+          break;
+        case '^2':
+          res = val * val;
+          break;
+        case '1/x':
+          if (val === 0) { current = 'Error'; break; }
+          res = 1 / val;
+          break;
+      }
+      if (res !== undefined) {
+        expressionEl.textContent = fn === '1/x' ? `1/(${val})` :
+                                   fn === '√' ? `√(${val})` :
+                                   `(${val})²`;
+        res = parseFloat(res.toPrecision(12));
+        current = String(res);
+        shouldReset = true;
+        showFun();
+      }
+      updateDisplay();
+    }
+
+    function handlePower() {
+      if (operator && !shouldReset) calculate();
+      previous = current;
+      operator = '^';
+      shouldReset = true;
+      updateDisplay();
+    }
+
+    function handlePi() {
+      current = String(Math.PI);
+      shouldReset = true;
+      updateDisplay();
+    }
+
+    function calculate() {
+      if (!operator || !previous) return;
+      const a = parseFloat(previous);
+      const b = parseFloat(current);
+      let res;
+      switch (operator) {
+        case '+': res = a + b; break;
+        case '−': res = a - b; break;
+        case '×': res = a * b; break;
+        case '÷':
+          if (b === 0) { current = 'Error'; operator = null; previous = ''; shouldReset = true; updateDisplay(); return; }
+          res = a / b;
+          break;
+        case '^': res = Math.pow(a, b); break;
+      }
+      expressionEl.textContent = `${previous} ${operator} ${current}`;
+      res = parseFloat(res.toPrecision(12));
+      current = String(res);
+      operator = null;
+      previous = '';
+      shouldReset = true;
+      showFun();
+      updateDisplay();
+    }
+
+    function handleClear() {
+      current = '0';
+      previous = '';
+      operator = null;
+      shouldReset = false;
+      expressionEl.textContent = '';
+      funEl.classList.remove('show');
+      resultEl.classList.remove('flash');
+      updateDisplay();
+    }
+
+    function handleSign() {
+      if (current !== '0' && current !== 'Error') {
+        current = current.startsWith('-') ? current.slice(1) : '-' + current;
+        updateDisplay();
+      }
+    }
+
+    function handlePercent() {
+      if (current !== 'Error') {
+        current = String(parseFloat(current) / 100);
+        current = String(parseFloat(current).toPrecision(12));
+        updateDisplay();
+      }
+    }
+
+    document.querySelector('.buttons').addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn');
+      if (!btn) return;
+
+      const action = btn.dataset.action;
+      const value = btn.dataset.value;
+
+      switch (action) {
+        case 'number':   handleNumber(value); break;
+        case 'decimal':  handleDecimal(); break;
+        case 'operator': handleOperator(value); break;
+        case 'sci':
+          if (value === '^') handlePower();
+          else handleSci(value);
+          break;
+        case 'pi':       handlePi(); break;
+        case 'equals':   calculate(); break;
+        case 'clear':    handleClear(); break;
+        case 'sign':     handleSign(); break;
+        case 'percent':  handlePercent(); break;
+      }
+    });
+
+    updateDisplay();
+  </script>
+</body>
+</html>
